@@ -1,0 +1,7 @@
+{
+    "name": "payway/payway",
+    "description": "ABA PayWay",
+    "type": "package",
+    "require": {
+    }
+}

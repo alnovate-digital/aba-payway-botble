@@ -1,0 +1,13 @@
+{
+    "id": "botble/payway",
+    "name": "PayWay by ABA Bank",
+    "namespace": "Botble\\Payway\\",
+    "provider": "Botble\\Payway\\Providers\\PaywayServiceProvider",
+    "author": "Alnovate Digital",
+    "url": "https://alnovate.com",
+    "version": "1.0.0",
+    "description": "ABA PayWay payment gateway integration",
+    "require": [
+        "botble/payment"
+    ]
+}
