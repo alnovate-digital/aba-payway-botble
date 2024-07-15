@@ -2,14 +2,11 @@
 
 namespace Botble\Payway\Services;
 
-use Botble\Payway\Services\Payway;
-use Botble\Payment\Models\Payment;
 use Botble\Payment\Services\Traits\PaymentErrorTrait;
 use Botble\Support\Services\ProduceServiceInterface;
 use Exception;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
-use Throwable;
 
 abstract class PaywayPaymentAbstract implements ProduceServiceInterface
 {
@@ -27,6 +24,7 @@ abstract class PaywayPaymentAbstract implements ProduceServiceInterface
     public function setCurrency($currency)
     {
         $this->paymentCurrency = $currency;
+
         return $this;
     }
 
@@ -41,6 +39,7 @@ abstract class PaywayPaymentAbstract implements ProduceServiceInterface
             return $this->makePayment($request);
         } catch (Exception $exception) {
             $this->setErrorMessageAndLogging($exception, 1);
+
             return false;
         }
     }

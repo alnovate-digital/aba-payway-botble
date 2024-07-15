@@ -3,8 +3,8 @@
 namespace Botble\Payway\Providers;
 
 use Botble\Base\Traits\LoadAndPublishDataTrait;
-use Illuminate\Support\ServiceProvider;
 use Botble\Theme\Facades\Theme;
+use Illuminate\Support\ServiceProvider;
 
 class PaywayServiceProvider extends ServiceProvider
 {
@@ -22,7 +22,7 @@ class PaywayServiceProvider extends ServiceProvider
             ->loadAndPublishViews()
             ->publishAssets();
 
-        $this->app->register(HookServiceProvider::class);        
+        $this->app->register(HookServiceProvider::class);
 
         if ($this->isActivePlugin(PAYWAY_PAYMENT_METHOD_NAME)) {
             Theme::asset()
@@ -52,7 +52,7 @@ class PaywayServiceProvider extends ServiceProvider
                     return true;
                 }
 
-                return is_object($value) && (string)$value === (string)$needle;
+                return is_object($value) && (string) $value === (string) $needle;
             });
     }
 
@@ -61,7 +61,7 @@ class PaywayServiceProvider extends ServiceProvider
      *
      * @param string $plugin in @Botble CMS
      */
-    private function isActivePlugin(string $plugin): bool|string
+    private function isActivePlugin(string $plugin): bool
     {
         return $this->getValue(get_active_plugins(), $plugin) === $plugin;
     }
