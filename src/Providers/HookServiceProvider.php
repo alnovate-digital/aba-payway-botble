@@ -64,11 +64,15 @@ class HookServiceProvider extends ServiceProvider
         }, 20, 2);
 
         add_filter(PAYMENT_FILTER_PAYMENT_INFO_DETAIL, function ($data, $payment) {
-            if ($payment->payment_channel == PAYWAY_PAYMENT_METHOD_NAME) {
-                $payway = new Payway();
-                $detail = $payway->checkTransaction($payment->charge_id);
-
-                $data = view('plugins/payway::detail', ['payment' => $detail])->render();
+            if ($payment->payment_channel == PAYSTACK_PAYMENT_METHOD_NAME) {
+                $paymentService = (new PaywayPaymentService());
+                $paymentDetail = $paymentService->getPaymentDetails($payment);
+                if ($paymentDetail) {
+                    $data = view(
+                        'plugins/payway::detail',
+                        ['payment' => $paymentDetail, 'paymentModel' => $payment]
+                    )->render();
+                }
             }
 
             return $data;

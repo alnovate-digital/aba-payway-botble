@@ -10,6 +10,7 @@ use Botble\Payment\Supports\PaymentHelper;
 use Botble\Payway\Http\Requests\CallbackRequest;
 use Botble\Payway\Http\Requests\PaymentRequest;
 use Botble\Payway\Services\Payway;
+use Botble\Payway\Services\PaywayPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -58,6 +59,7 @@ class PaywayController extends BaseController
     public function getSuccess(PaymentRequest $request, Payway $payway, BaseHttpResponse $response)
     {
         $tran_id = $request->input('tran_id');
+        Log::info('Tran ID in getSuccess', ['tran_id' => $tran_id]);
 
         if (! $tran_id) {
             return $response
@@ -66,11 +68,24 @@ class PaywayController extends BaseController
                 ->setMessage(__('Transaction ID not provided.'));
         }
 
-        $verifyData = $payway->checkTransaction($tran_id);
-        $data = json_decode($verifyData->getContent(), true);
+        $param = $payway->getMerchantId();
+        $transactionList = $payway->getTransactionList($param);
+        $transactions = json_decode($transactionList->getContent(), true);
 
-        if (! $data) {
-            $errorMessage = __('Checkout failed with PayWay status code: ') . $data['status'];
+        // Check if 'data' key exists and is not empty
+        if (!isset($transactions['data']) || empty($transactions['data'])) {
+            return $response
+                ->setError()
+                ->setNextUrl(PaymentHelper::getCancelURL())
+                ->setMessage(__('No transactions found.'));
+        }
+        
+        // Get the first transaction
+        $transaction = $transactions['data'][0];
+        Log::info('Transaction list from PayWay', ['payment' => $transaction]);
+
+        if (! $transaction) {
+            $errorMessage = __('Checkout failed with PayWay status: ') . $transaction['status'];
 
             return $response
                 ->setError()
@@ -78,7 +93,7 @@ class PaywayController extends BaseController
                 ->setMessage($errorMessage);
         }
 
-        $status = match ($data['payment_status']) {
+        $status = match ($transaction['status']) {
             'APPROVED' => PaymentStatusEnum::COMPLETED,
             'DECLINED' => PaymentStatusEnum::FAILED,
             default => PaymentStatusEnum::PENDING,
@@ -92,9 +107,9 @@ class PaywayController extends BaseController
 
         do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
             'order_id' => $request->input('order_id'),
-            'amount' => $data['totalAmount'],
+            'amount' => $transaction['payment_amount'],
             'charge_id' => $tran_id,
-            'payment_channel' => $data['payment_type'],
+            'payment_channel' => $transaction['payment_type'],
             'status' => $status,
             'customer_id' => $request->input('customer_id'),
             'customer_type' => $request->input('customer_type'),
