@@ -5,17 +5,13 @@ namespace Botble\Payway\Providers;
 use Botble\Base\Facades\Html;
 use Botble\Ecommerce\Models\Currency;
 use Botble\Payment\Enums\PaymentMethodEnum;
-use Botble\Payment\Models\Payment;
 use Botble\Payment\Facades\PaymentMethods;
-use Botble\Payway\Forms\PaywayPaymentMethodForm;
 use Botble\Payment\Supports\PaymentHelper;
-use Botble\Payway\Services\PaywayPaymentService;
+use Botble\Payway\Forms\PaywayPaymentMethodForm;
 use Botble\Payway\Services\Payway;
-use Botble\Payway\Http\Controllers\PaywayController;
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
+use Botble\Payway\Services\PaywayPaymentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\ServiceProvider;
 use Throwable;
 
 class HookServiceProvider extends ServiceProvider
@@ -154,17 +150,17 @@ class HookServiceProvider extends ServiceProvider
             $items = [
                 'items' => [
                     [
-                        'name' => (string)$paymentData['products'][0]['name'],
-                        'quantity' => (int)$paymentData['products'][0]['qty'],
-                        'price' => number_format((float)$paymentData['products'][0]['price'], 2),
+                        'name' => (string) $paymentData['products'][0]['name'],
+                        'quantity' => (int) $paymentData['products'][0]['qty'],
+                        'price' => number_format((float) $paymentData['products'][0]['price'], 2),
                     ],
-                ]
+                ],
             ];
             $hashedItems = base64_encode(json_encode($items));
-            $callback_url = route('payway.payment.callback');
+            $callback_url = route('payway.payment.callback', ['tran_id' => $transactionId]);
             $return_url = base64_encode($callback_url);
             $cancel_url = $paymentHelper->getCancelURL();
-            $continue_success_url = route('payway.payment.success');
+            $continue_success_url = route('payway.payment.success', ['tran_id' => $transactionId]);
 
             $dataForPayment = [
                 'merchant_id' => $merchant_id,
@@ -190,7 +186,6 @@ class HookServiceProvider extends ServiceProvider
 
             $payway->withPaymentData($dataForPayment);
             $payway->getPaymentForm();
-
         } catch (Throwable $exception) {
             $data['error'] = true;
             $data['message'] = json_encode($exception->getMessage());

@@ -2,24 +2,16 @@
 
 namespace Botble\Payway\Http\Controllers;
 
-use Botble\Payway\Http\Requests\CallbackRequest;
-use Botble\Payway\Http\Requests\PaymentRequest;
-use Botble\Payway\Providers\PaywayServiceProvider;
 use Botble\Base\Http\Controllers\BaseController;
 use Botble\Base\Http\Responses\BaseHttpResponse;
-use Botble\Ecommerce\Enums\OrderStatusEnum;
-use Botble\Ecommerce\Models\Order;
-use Botble\Ecommerce\Models\Customer;
 use Botble\Payment\Enums\PaymentStatusEnum;
 use Botble\Payment\Repositories\Interfaces\PaymentInterface;
 use Botble\Payment\Supports\PaymentHelper;
-use Botble\Payway\Services\PaywayPaymentService;
+use Botble\Payway\Http\Requests\CallbackRequest;
+use Botble\Payway\Http\Requests\PaymentRequest;
 use Botble\Payway\Services\Payway;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 
 class PaywayController extends BaseController
 {
@@ -36,7 +28,7 @@ class PaywayController extends BaseController
 
         $verifyData = $payway->checkTransaction($tran_id);
         $data = json_decode($verifyData->getContent(), true);
-        \Log::info('Payment data from PayWay when verify', ['payment' => $data]);
+        Log::info('Payment data from PayWay when verify', ['payment' => $data]);
 
         if (! $data) {
             return;
@@ -45,27 +37,17 @@ class PaywayController extends BaseController
         $payment = $paymentRepository->getFirstBy([
             'charge_id' => $tran_id,
         ]);
-        \Log::info('Payment data from Repository', ['payment' => $payment]);
+        Log::info('Payment data from Repository', ['payment' => $payment]);
 
         if (! $payment) {
             return;
         }
 
-        switch ($data['payment_status']) {
-            case 'APPROVED':
-                $status = PaymentStatusEnum::COMPLETED;
-
-                break;
-
-            case 'DECLINED':
-                $status = PaymentStatusEnum::FAILED;
-
-                break;
-            default:
-                $status = PaymentStatusEnum::PENDING;
-
-                break;
-        }
+        $status = match ($data['payment_status']) {
+            'APPROVED' => PaymentStatusEnum::COMPLETED,
+            'DECLINED' => PaymentStatusEnum::FAILED,
+            default => PaymentStatusEnum::PENDING,
+        };
 
         if (! in_array($payment->status, [PaymentStatusEnum::COMPLETED, PaymentStatusEnum::FAILED, $status])) {
             $payment->status = $status;
@@ -89,28 +71,18 @@ class PaywayController extends BaseController
 
         if (! $data) {
             $errorMessage = __('Checkout failed with PayWay status code: ') . $data['status'];
+
             return $response
                 ->setError()
                 ->setNextUrl(PaymentHelper::getCancelURL())
                 ->setMessage($errorMessage);
         }
 
-        switch ($data['payment_status']) {
-            case 'APPROVED':
-                $status = PaymentStatusEnum::COMPLETED;
-
-                break;
-
-            case 'DECLINED':
-                $status = PaymentStatusEnum::FAILED;
-
-                break;
-
-            default:
-                $status = PaymentStatusEnum::PENDING;
-
-                break;
-        }
+        $status = match ($data['payment_status']) {
+            'APPROVED' => PaymentStatusEnum::COMPLETED,
+            'DECLINED' => PaymentStatusEnum::FAILED,
+            default => PaymentStatusEnum::PENDING,
+        };
 
         if ($status === PaymentStatusEnum::FAILED) {
             return $response
@@ -160,7 +132,7 @@ class PaywayController extends BaseController
         $hash = base64_encode(hash_hmac('sha512', $hashStr, $payway->getApiKey(), true));
 
         return response()->json([
-            'hash' => $hash
+            'hash' => $hash,
         ]);
     }
 }

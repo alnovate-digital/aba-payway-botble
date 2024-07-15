@@ -2,7 +2,6 @@
 
 namespace Botble\Payway\Services;
 
-use Botble\Payway\Services\PaywayPaymentAbstract;
 use Illuminate\Http\Request;
 
 class PaywayPaymentService extends PaywayPaymentAbstract

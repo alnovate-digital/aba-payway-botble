@@ -2,10 +2,7 @@
 
 namespace Botble\Payway\Services;
 
-use Botble\Payway\Providers\PaywayServiceProvider;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 
 class Payway
 {
@@ -33,6 +30,7 @@ class Payway
     public function withPaymentData(array $data): self
     {
         $this->data = $data;
+
         return $this;
     }
 
@@ -46,7 +44,7 @@ class Payway
         exit();
     }
 
-	public function checkTransaction(string $tran_id)
+    public function checkTransaction(string $tran_id)
     {
         $merchant_id = $this->getMerchantId();
         $api_key = $this->getApiKey();
@@ -70,19 +68,20 @@ class Payway
         // Handle the response
         if ($response->successful()) {
             $responseData = $response->json();
+
             // Process the response data as needed
             return response()
                 ->json($responseData);
-
-        } else {
-            return response()
-                ->json(['error' => 'Error checking transaction'], 500);
         }
-	}
+
+        return response()
+            ->json(['error' => 'Error checking transaction'], 500);
+    }
 
     public function getTransactionId(): string
     {
         $this->transactionId = (string) random_int(10000000, 99999999);
+
         return $this->transactionId;
     }
 

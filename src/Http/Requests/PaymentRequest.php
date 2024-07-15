@@ -10,5 +10,4 @@ class PaymentRequest extends Request
     {
         return [];
     }
-
 }
