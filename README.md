@@ -1,7 +1,8 @@
 ## ABA PayWay Payment Gateway Plugin for Botble CMS
 This plugin allows you to integrate ABA PayWay Payment Gateway into Botble CMS.
 
-(Warning: This plugin is not working properly and requires fixes.)
+> [!WARNING]  
+> This plugin is not working properly and requires fixes.
 
 ## Installation
 
@@ -11,11 +12,39 @@ This plugin allows you to integrate ABA PayWay Payment Gateway into Botble CMS.
 
 Note: Supported currencies for this plugin are `USD` and `KHR`.
 
-## License
+## Supported Features
 
-This plugin is released under the [MIT license].
+- [x] Create Transaction
+- [x] Check Transaction
+- [x] Transaction List
+- [ ] Refund Transaction
+- [ ] Pre-Authorization
+- [ ] Account-On-File (AOF)
+- [ ] Card-On-File (COF)
+- [ ] Exchange Rate
+- [ ] Payment Link
+
+## Sandbox API Endpoints
+
+- Create Transaction: 
+  ```shell
+  https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/purchase
+  ```
+- Check Transaction:
+  ```shell
+  https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/check-transaction
+  ```
+- Transaction List:
+  ```shell
+  https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/transaction-list
+  ```
+- For other Test URLs and Production, please refer to its detailed documentation.
 
 ## Documentation
 
 Here you'll find detailed documentation and references to help you integrate PayWay APIs on your software solution to take online payments securely on any platform.
 PayWay Developer Suite: https://www.payway.com.kh/developers
+
+## License
+
+This plugin is released under the MIT License.
