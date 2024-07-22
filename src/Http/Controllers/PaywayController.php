@@ -1,18 +1,19 @@
 <?php
 
-namespace Botble\Payway\Http\Controllers;
+namespace Alnovate\Payway\Http\Controllers;
 
 use Botble\Base\Http\Controllers\BaseController;
 use Botble\Base\Http\Responses\BaseHttpResponse;
 use Botble\Payment\Enums\PaymentStatusEnum;
 use Botble\Payment\Repositories\Interfaces\PaymentInterface;
 use Botble\Payment\Supports\PaymentHelper;
-use Botble\Payway\Http\Requests\CallbackRequest;
-use Botble\Payway\Http\Requests\PaymentRequest;
-use Botble\Payway\Services\Payway;
-use Botble\Payway\Services\PaywayPaymentService;
+use Alnovate\Payway\Http\Requests\CallbackRequest;
+use Alnovate\Payway\Http\Requests\PaymentRequest;
+use Alnovate\Payway\Services\Payway;
+use Alnovate\Payway\Services\PaywayPaymentService;
+use Illuminate\Support\ServiceProvider;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+//use Illuminate\Support\Facades\Log;
 
 class PaywayController extends BaseController
 {
@@ -29,7 +30,7 @@ class PaywayController extends BaseController
 
         $verifyData = $payway->checkTransaction($tran_id);
         $data = json_decode($verifyData->getContent(), true);
-        Log::info('Payment data from PayWay when verify', ['payment' => $data]);
+        //Log::info('Payment data from PayWay to verify', ['payment' => $data]);
 
         if (! $data) {
             return;
@@ -38,13 +39,12 @@ class PaywayController extends BaseController
         $payment = $paymentRepository->getFirstBy([
             'charge_id' => $tran_id,
         ]);
-        Log::info('Payment data from Repository', ['payment' => $payment]);
 
         if (! $payment) {
             return;
         }
 
-        $status = match ($data['payment_status']) {
+        $status = match ($data['data']['payment_status']) {
             'APPROVED' => PaymentStatusEnum::COMPLETED,
             'DECLINED' => PaymentStatusEnum::FAILED,
             default => PaymentStatusEnum::PENDING,
@@ -58,16 +58,6 @@ class PaywayController extends BaseController
 
     public function getSuccess(PaymentRequest $request, Payway $payway, BaseHttpResponse $response)
     {
-        $tran_id = $request->input('tran_id');
-        Log::info('Tran ID in getSuccess', ['tran_id' => $tran_id]);
-
-        if (! $tran_id) {
-            return $response
-                ->setError()
-                ->setNextUrl(PaymentHelper::getCancelURL())
-                ->setMessage(__('Transaction ID not provided.'));
-        }
-
         $param = $payway->getMerchantId();
         $transactionList = $payway->getTransactionList($param);
         $transactions = json_decode($transactionList->getContent(), true);
@@ -82,10 +72,10 @@ class PaywayController extends BaseController
         
         // Get the first transaction
         $transaction = $transactions['data'][0];
-        Log::info('Transaction list from PayWay', ['payment' => $transaction]);
+        //Log::info('First transaction of the list from PayWay', ['transaction' => $transaction]);
 
         if (! $transaction) {
-            $errorMessage = __('Checkout failed with PayWay status: ') . $transaction['status'];
+            $errorMessage = __('Checkout failed with PayWay status: ') . $transaction['payment_status_code'];
 
             return $response
                 ->setError()
@@ -93,7 +83,7 @@ class PaywayController extends BaseController
                 ->setMessage($errorMessage);
         }
 
-        $status = match ($transaction['status']) {
+        $status = match ($transaction['payment_status']) {
             'APPROVED' => PaymentStatusEnum::COMPLETED,
             'DECLINED' => PaymentStatusEnum::FAILED,
             default => PaymentStatusEnum::PENDING,
@@ -102,14 +92,15 @@ class PaywayController extends BaseController
         if ($status === PaymentStatusEnum::FAILED) {
             return $response
                 ->setError()
-                ->setNextUrl(PaymentHelper::getCancelURL());
+                ->setNextUrl(PaymentHelper::getCancelURL())
+                ->setMessage(__('Payment status returned fail.'));
         }
 
         do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
             'order_id' => $request->input('order_id'),
             'amount' => $transaction['payment_amount'],
-            'charge_id' => $tran_id,
-            'payment_channel' => $transaction['payment_type'],
+            'charge_id' => $request->input('tran_id'),
+            'payment_channel' => PAYWAY_PAYMENT_METHOD_NAME,
             'status' => $status,
             'customer_id' => $request->input('customer_id'),
             'customer_type' => $request->input('customer_type'),

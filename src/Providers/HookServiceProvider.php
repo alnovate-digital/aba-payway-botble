@@ -1,15 +1,15 @@
 <?php
 
-namespace Botble\Payway\Providers;
+namespace Alnovate\Payway\Providers;
 
 use Botble\Base\Facades\Html;
 use Botble\Ecommerce\Models\Currency;
 use Botble\Payment\Enums\PaymentMethodEnum;
 use Botble\Payment\Facades\PaymentMethods;
 use Botble\Payment\Supports\PaymentHelper;
-use Botble\Payway\Forms\PaywayPaymentMethodForm;
-use Botble\Payway\Services\Payway;
-use Botble\Payway\Services\PaywayPaymentService;
+use Alnovate\Payway\Forms\PaywayPaymentMethodForm;
+use Alnovate\Payway\Services\Payway;
+use Alnovate\Payway\Services\PaywayPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
@@ -64,7 +64,7 @@ class HookServiceProvider extends ServiceProvider
         }, 20, 2);
 
         add_filter(PAYMENT_FILTER_PAYMENT_INFO_DETAIL, function ($data, $payment) {
-            if ($payment->payment_channel == PAYSTACK_PAYMENT_METHOD_NAME) {
+            if ($payment->payment_channel == PAYWAY_PAYMENT_METHOD_NAME) {
                 $paymentService = (new PaywayPaymentService());
                 $paymentDetail = $paymentService->getPaymentDetails($payment);
                 if ($paymentDetail) {
@@ -153,18 +153,22 @@ class HookServiceProvider extends ServiceProvider
             $amount = $paymentData['amount'];
             $items = [
                 'items' => [
-                    [
-                        'name' => (string) $paymentData['products'][0]['name'],
-                        'quantity' => (int) $paymentData['products'][0]['qty'],
-                        'price' => number_format((float) $paymentData['products'][0]['price'], 2),
-                    ],
+                    'name' => (string) $paymentData['products'][0]['name'],
+                    'quantity' => (int) $paymentData['products'][0]['qty'],
+                    'price' => number_format((float) $paymentData['products'][0]['price'], 2),
                 ],
             ];
             $hashedItems = base64_encode(json_encode($items));
-            $callback_url = route('payway.payment.callback', ['tran_id' => $transactionId]);
+            $callback_url = route('payway.payment.callback');
             $return_url = base64_encode($callback_url);
             $cancel_url = $paymentHelper->getCancelURL();
-            $continue_success_url = route('payway.payment.success', ['tran_id' => $transactionId]);
+            $continue_success_url = route('payway.payment.success', [
+                'tran_id' => $transactionId,
+                'order_id' => $paymentData['order_id'],
+                'customer_id' => $paymentData['customer_id'],
+                'customer_type' => $paymentData['customer_type'],
+                'token' => $paymentData['checkout_token'],
+            ]);
 
             $dataForPayment = [
                 'merchant_id' => $merchant_id,
@@ -180,12 +184,6 @@ class HookServiceProvider extends ServiceProvider
                 'return_url' => $return_url,
                 'cancel_url' => $cancel_url,
                 'continue_success_url' => $continue_success_url,
-                'metadata' => json_encode([
-                    'order_id' => $paymentData['order_id'],
-                    'customer_id' => $paymentData['customer_id'],
-                    'customer_type' => addslashes($paymentData['customer_type']),
-                    'token' => $paymentData['checkout_token'],
-                ]),
             ];
 
             $payway->withPaymentData($dataForPayment);

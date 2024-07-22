@@ -1,6 +1,6 @@
 <?php
 
-namespace Botble\Payway\Services;
+namespace Alnovate\Payway\Services;
 
 use Illuminate\Support\Facades\Http;
 
@@ -30,7 +30,6 @@ class Payway
     public function withPaymentData(array $data): self
     {
         $this->data = $data;
-
         return $this;
     }
 

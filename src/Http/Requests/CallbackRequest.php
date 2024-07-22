@@ -1,6 +1,6 @@
 <?php
 
-namespace Botble\Payway\Http\Requests;
+namespace Alnovate\Payway\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
