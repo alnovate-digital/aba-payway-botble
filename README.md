@@ -32,11 +32,11 @@ Note: Supported currencies for this plugin are `USD` and `KHR`.
   ```
 - Check Transaction:
   ```shell
-  https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/check-transaction
+  https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/check-transaction-2
   ```
 - Transaction List:
   ```shell
-  https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/transaction-list
+  https://checkout-sandbox.payway.com.kh/api/payment-gateway/v1/payments/transaction-list-2
   ```
 - For other Test URLs and Production, please refer to its detailed documentation.
 
