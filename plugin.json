@@ -1,8 +1,8 @@
 {
-    "id": "botble/payway",
+    "id": "alnovate/payway",
     "name": "PayWay by ABA Bank",
-    "namespace": "Botble\\Payway\\",
-    "provider": "Botble\\Payway\\Providers\\PaywayServiceProvider",
+    "namespace": "Alnovate\\Payway\\",
+    "provider": "Alnovate\\Payway\\Providers\\PaywayServiceProvider",
     "author": "Alnovate Digital",
     "url": "https://alnovate.com",
     "version": "1.0.0",
