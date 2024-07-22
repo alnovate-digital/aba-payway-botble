@@ -10,7 +10,18 @@ This plugin allows you to integrate ABA PayWay Payment Gateway into Botble CMS.
 - Go to Admin Panel > Plugins, then activate `PayWay by ABA Bank` plugin.
 - Go to Admin Panel > Settings > Payment methods, then enter your gateway credentials.
 
-Note: Supported currencies for this plugin are `USD` and `KHR`.
+## Payment Options
+
+- [x] ABA Pay
+- [x] KHQR
+- [x] Credit/Debit Cards
+- [ ] AliPay (Disabled by default)
+- [ ] WeChat (Disabled by default)
+
+## Supported Currencies
+
+- [x] US Dollar (USD)
+- [ ] Khmer Riel (KHR)
 
 ## Supported Features
 
