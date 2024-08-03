@@ -5,7 +5,7 @@
     "provider": "Alnovate\\Payway\\Providers\\PaywayServiceProvider",
     "author": "Alnovate Digital",
     "url": "https://alnovate.com",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "ABA PayWay payment gateway integration",
     "require": [
         "botble/payment"
