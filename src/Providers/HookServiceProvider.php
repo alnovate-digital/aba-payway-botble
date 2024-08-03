@@ -3,6 +3,7 @@
 namespace Alnovate\Payway\Providers;
 
 use Botble\Base\Facades\Html;
+use Botble\Ecommerce\Models\ShippingRule;
 use Botble\Ecommerce\Models\Currency;
 use Botble\Payment\Enums\PaymentMethodEnum;
 use Botble\Payment\Facades\PaymentMethods;
@@ -150,14 +151,18 @@ class HookServiceProvider extends ServiceProvider
             $lastName = $name[1];
             $email = $orderAddress['email'];
             $phone = $orderAddress['phone'];
-            $amount = $paymentData['amount'];
-            $items = [
-                'items' => [
-                    'name' => (string) $paymentData['products'][0]['name'],
-                    'quantity' => (int) $paymentData['products'][0]['qty'],
-                    'price' => number_format((float) $paymentData['products'][0]['price'], 2),
-                ],
-            ];
+            $amount = number_format((float) $paymentData['orders'][0]['sub_total'], 2);
+
+            $items = [];
+            foreach ($paymentData['products'] as $product) {
+                $items[] = [
+                    'name' => (string) $product['name'],
+                    'quantity' => (int) $product['qty'],
+                    'price' => number_format((float) $product['price'], 2),
+                ];
+            }
+            
+            $shipping_fee = $paymentData['shipping_amount'];
             $hashedItems = base64_encode(json_encode($items));
             $callback_url = route('payway.payment.callback');
             $return_url = base64_encode($callback_url);
@@ -169,6 +174,7 @@ class HookServiceProvider extends ServiceProvider
                 'customer_type' => $paymentData['customer_type'],
                 'token' => $paymentData['checkout_token'],
             ]);
+            $return_params = json_encode($paymentData['description']);
 
             $dataForPayment = [
                 'merchant_id' => $merchant_id,
@@ -181,9 +187,11 @@ class HookServiceProvider extends ServiceProvider
                 'email' => $email,
                 'phone' => $phone,
                 'items' => $hashedItems,
+                'shipping_fee' => $shipping_fee,
                 'return_url' => $return_url,
                 'cancel_url' => $cancel_url,
                 'continue_success_url' => $continue_success_url,
+                'return_params' => $return_params,
             ];
 
             $payway->withPaymentData($dataForPayment);

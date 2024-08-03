@@ -101,6 +101,7 @@ class PaywayController extends BaseController
             'amount' => $transaction['payment_amount'],
             'charge_id' => $request->input('tran_id'),
             'payment_channel' => PAYWAY_PAYMENT_METHOD_NAME,
+            'description' => $transaction['payment_type'],
             'status' => $status,
             'customer_id' => $request->input('customer_id'),
             'customer_type' => $request->input('customer_type'),
@@ -120,6 +121,7 @@ class PaywayController extends BaseController
             'tran_id' => $request->input('tran_id'),
             'amount' => $request->input('amount'),
             'items' => $request->input('items'),
+            'shipping_fee' => $request->input('shipping_fee'),
             'firstname' => $request->input('firstname'),
             'lastname' => $request->input('lastname'),
             'email' => $request->input('email'),
@@ -128,6 +130,7 @@ class PaywayController extends BaseController
             'return_url' => $request->input('return_url'),
             'cancel_url' => $request->input('cancel_url'),
             'continue_success_url' => $request->input('continue_success_url'),
+            'return_params' => $request->input('return_params'),
         ];
 
         // Concatenate the required fields into a single string
