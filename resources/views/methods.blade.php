@@ -1,7 +1,9 @@
 @if (get_payment_setting('status', PAYWAY_PAYMENT_METHOD_NAME) == 1)
     <x-plugins-payment::payment-method
+        :$selecting
         :name="PAYWAY_PAYMENT_METHOD_NAME"
-        paymentName="Payway"
+        :paymentName="$paymentDisplayName"
+        :supportedCurrencies="$supportedCurrencies"
     >
 
     <x-slot name="currencyNotSupportedMessage">
@@ -193,7 +195,7 @@
     @if (EcommerceHelper::isValidToProcessCheckout())
         <script>
             $(document).ready(function(){
-                // Check if Payway is selected
+                // Check if PayWay is selected
                 if ($('input[name="payment_method"]:checked').val() === 'payway') {
                     $('#checkout-form').off('submit').on('submit', function(event) {
                         event.preventDefault(); // Prevent the default form submission

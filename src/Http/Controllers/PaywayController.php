@@ -1,17 +1,18 @@
 <?php
 
-namespace Botble\Payway\Http\Controllers;
+namespace Alnovate\Payway\Http\Controllers;
 
 use Botble\Base\Http\Controllers\BaseController;
 use Botble\Base\Http\Responses\BaseHttpResponse;
 use Botble\Payment\Enums\PaymentStatusEnum;
 use Botble\Payment\Repositories\Interfaces\PaymentInterface;
 use Botble\Payment\Supports\PaymentHelper;
-use Botble\Payway\Http\Requests\CallbackRequest;
-use Botble\Payway\Http\Requests\PaymentRequest;
-use Botble\Payway\Services\Payway;
+use Alnovate\Payway\Http\Requests\CallbackRequest;
+use Alnovate\Payway\Http\Requests\PaymentRequest;
+use Alnovate\Payway\Services\Payway;
+use Alnovate\Payway\Services\PaywayPaymentService;
+use Illuminate\Support\ServiceProvider;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class PaywayController extends BaseController
 {
@@ -28,7 +29,6 @@ class PaywayController extends BaseController
 
         $verifyData = $payway->checkTransaction($tran_id);
         $data = json_decode($verifyData->getContent(), true);
-        Log::info('Payment data from PayWay when verify', ['payment' => $data]);
 
         if (! $data) {
             return;
@@ -37,13 +37,12 @@ class PaywayController extends BaseController
         $payment = $paymentRepository->getFirstBy([
             'charge_id' => $tran_id,
         ]);
-        Log::info('Payment data from Repository', ['payment' => $payment]);
 
         if (! $payment) {
             return;
         }
 
-        $status = match ($data['payment_status']) {
+        $status = match ($data['data']['payment_status']) {
             'APPROVED' => PaymentStatusEnum::COMPLETED,
             'DECLINED' => PaymentStatusEnum::FAILED,
             default => PaymentStatusEnum::PENDING,
@@ -57,20 +56,23 @@ class PaywayController extends BaseController
 
     public function getSuccess(PaymentRequest $request, Payway $payway, BaseHttpResponse $response)
     {
-        $tran_id = $request->input('tran_id');
+        $param = $payway->getMerchantId();
+        $transactionList = $payway->getTransactionList($param);
+        $transactions = json_decode($transactionList->getContent(), true);
 
-        if (! $tran_id) {
+        // Check if 'data' key exists and is not empty
+        if (!isset($transactions['data']) || empty($transactions['data'])) {
             return $response
                 ->setError()
                 ->setNextUrl(PaymentHelper::getCancelURL())
-                ->setMessage(__('Transaction ID not provided.'));
+                ->setMessage(__('No transactions found.'));
         }
+        
+        // Get the first transaction
+        $transaction = $transactions['data'][0];
 
-        $verifyData = $payway->checkTransaction($tran_id);
-        $data = json_decode($verifyData->getContent(), true);
-
-        if (! $data) {
-            $errorMessage = __('Checkout failed with PayWay status code: ') . $data['status'];
+        if (! $transaction) {
+            $errorMessage = __('Checkout failed with PayWay status: ') . $transaction['payment_status_code'];
 
             return $response
                 ->setError()
@@ -78,7 +80,7 @@ class PaywayController extends BaseController
                 ->setMessage($errorMessage);
         }
 
-        $status = match ($data['payment_status']) {
+        $status = match ($transaction['payment_status']) {
             'APPROVED' => PaymentStatusEnum::COMPLETED,
             'DECLINED' => PaymentStatusEnum::FAILED,
             default => PaymentStatusEnum::PENDING,
@@ -87,14 +89,15 @@ class PaywayController extends BaseController
         if ($status === PaymentStatusEnum::FAILED) {
             return $response
                 ->setError()
-                ->setNextUrl(PaymentHelper::getCancelURL());
+                ->setNextUrl(PaymentHelper::getCancelURL())
+                ->setMessage(__('Payment status returned fail.'));
         }
 
         do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
             'order_id' => $request->input('order_id'),
-            'amount' => $data['totalAmount'],
-            'charge_id' => $tran_id,
-            'payment_channel' => $data['payment_type'],
+            'amount' => $transaction['payment_amount'],
+            'charge_id' => $request->input('tran_id'),
+            'payment_channel' => PAYWAY_PAYMENT_METHOD_NAME,
             'status' => $status,
             'customer_id' => $request->input('customer_id'),
             'customer_type' => $request->input('customer_type'),
@@ -114,6 +117,7 @@ class PaywayController extends BaseController
             'tran_id' => $request->input('tran_id'),
             'amount' => $request->input('amount'),
             'items' => $request->input('items'),
+            'shipping_fee' => $request->input('shipping_fee'),
             'firstname' => $request->input('firstname'),
             'lastname' => $request->input('lastname'),
             'email' => $request->input('email'),
@@ -122,6 +126,7 @@ class PaywayController extends BaseController
             'return_url' => $request->input('return_url'),
             'cancel_url' => $request->input('cancel_url'),
             'continue_success_url' => $request->input('continue_success_url'),
+            'return_params' => $request->input('return_params'),
         ];
 
         // Concatenate the required fields into a single string
@@ -134,5 +139,27 @@ class PaywayController extends BaseController
         return response()->json([
             'hash' => $hash,
         ]);
+    }
+    
+    public function getPaymentOption()
+    {
+        $payway = new Payway();
+        $param = $payway->getMerchantId();
+        $transactionList = $payway->getTransactionList($param);
+        $transactions = json_decode($transactionList->getContent(), true);
+
+        // Check if 'data' key exists and is not empty
+        if (!isset($transactions['data']) || empty($transactions['data'])) {
+            return $response
+                ->setError()
+                ->setNextUrl(PaymentHelper::getCancelURL())
+                ->setMessage(__('No transactions found.'));
+        }
+        
+        // Get the first transaction
+        $transaction = $transactions['data'][0];
+        $paymentOption = $transaction['payment_type'];
+
+        return $paymentOption;
     }
 }

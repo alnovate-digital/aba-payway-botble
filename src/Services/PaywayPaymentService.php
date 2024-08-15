@@ -1,6 +1,6 @@
 <?php
 
-namespace Botble\Payway\Services;
+namespace Alnovate\Payway\Services;
 
 use Illuminate\Http\Request;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Botble\Payway;
+namespace Alnovate\Payway;
 
 use Botble\PluginManagement\Abstracts\PluginOperationAbstract;
 

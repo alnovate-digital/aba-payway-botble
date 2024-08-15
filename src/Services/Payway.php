@@ -1,6 +1,6 @@
 <?php
 
-namespace Botble\Payway\Services;
+namespace Alnovate\Payway\Services;
 
 use Illuminate\Support\Facades\Http;
 
@@ -30,7 +30,6 @@ class Payway
     public function withPaymentData(array $data): self
     {
         $this->data = $data;
-
         return $this;
     }
 
@@ -76,6 +75,39 @@ class Payway
 
         return response()
             ->json(['error' => 'Error checking transaction'], 500);
+    }
+
+    public function getTransactionList(string $param)
+    {
+        $merchant_id = $this->getMerchantId();
+        $api_key = $this->getApiKey();
+        $transactionListUrl = $this->getTransactionListUrl();
+
+        // Generate the hash
+        $req_time = date('YmdHis');
+        $hash = base64_encode(hash_hmac('sha512', "{$req_time}{$merchant_id}", $api_key, true));
+
+        // Prepare the request data
+        $requestData = [
+            'req_time' => $req_time,
+            'merchant_id' => $merchant_id,
+            'hash' => $hash,
+        ];
+
+        // Make the API request
+        $response = Http::post($transactionListUrl, $requestData);
+
+        // Handle the response
+        if ($response->successful()) {
+            $responseData = $response->json();
+
+            // Process the response data as needed
+            return response()
+                ->json($responseData);
+        }
+
+        return response()
+            ->json(['error' => 'Failed to get the transaction list'], 500);
     }
 
     public function getTransactionId(): string
