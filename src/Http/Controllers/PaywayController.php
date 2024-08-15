@@ -13,7 +13,6 @@ use Alnovate\Payway\Services\Payway;
 use Alnovate\Payway\Services\PaywayPaymentService;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class PaywayController extends BaseController
 {
@@ -30,7 +29,6 @@ class PaywayController extends BaseController
 
         $verifyData = $payway->checkTransaction($tran_id);
         $data = json_decode($verifyData->getContent(), true);
-        Log::info('Payment data from PayWay when verify', ['payment' => $data]);
 
         if (! $data) {
             return;
@@ -69,9 +67,9 @@ class PaywayController extends BaseController
                 ->setNextUrl(PaymentHelper::getCancelURL())
                 ->setMessage(__('No transactions found.'));
         }
-
-        $verifyData = $payway->checkTransaction($tran_id);
-        $data = json_decode($verifyData->getContent(), true);
+        
+        // Get the first transaction
+        $transaction = $transactions['data'][0];
 
         if (! $transaction) {
             $errorMessage = __('Checkout failed with PayWay status: ') . $transaction['payment_status_code'];
@@ -97,9 +95,9 @@ class PaywayController extends BaseController
 
         do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
             'order_id' => $request->input('order_id'),
-            'amount' => $data['totalAmount'],
-            'charge_id' => $tran_id,
-            'payment_channel' => $data['payment_type'],
+            'amount' => $transaction['payment_amount'],
+            'charge_id' => $request->input('tran_id'),
+            'payment_channel' => PAYWAY_PAYMENT_METHOD_NAME,
             'status' => $status,
             'customer_id' => $request->input('customer_id'),
             'customer_type' => $request->input('customer_type'),
