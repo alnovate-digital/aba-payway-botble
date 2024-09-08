@@ -8,9 +8,9 @@ use Botble\Ecommerce\Models\Currency;
 use Botble\Payment\Enums\PaymentMethodEnum;
 use Botble\Payment\Facades\PaymentMethods;
 use Botble\Payment\Supports\PaymentHelper;
-use Alnovate\Payway\Forms\PaywayPaymentMethodForm;
-use Alnovate\Payway\Services\Payway;
-use Alnovate\Payway\Services\PaywayPaymentService;
+use Botble\Payway\Forms\PaywayPaymentMethodForm;
+use Botble\Payway\Services\Payway;
+use Botble\Payway\Services\PaywayPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
@@ -44,27 +44,7 @@ class HookServiceProvider extends ServiceProvider
 
         add_filter(BASE_FILTER_ENUM_LABEL, function ($value, $class) {
             if ($class == PaymentMethodEnum::class && $value == PAYWAY_PAYMENT_METHOD_NAME) {
-                $value = 'ABA PayWay';
-            }
-
-            if ($class == PaymentMethodEnum::class && in_array($value, ['abapay', 'bakong', 'card', 'alipay', 'wechat'])) {
-                switch ($value) {
-                    case 'abapay':
-                        $value = 'ABA PAY';
-                        break;
-                    case 'bakong':
-                        $value = 'KHQR';
-                        break;
-                    case 'card':
-                        $value = 'Credit/Debit Card';
-                        break;
-                    case 'alipay':
-                        $value = 'AliPay';
-                        break;
-                    case 'wechat':
-                        $value = 'WeChat';
-                        break;
-                }
+                $value = 'PayWay by ABA Bank';
             }
 
             return $value;
@@ -92,21 +72,11 @@ class HookServiceProvider extends ServiceProvider
         }, 20, 2);
 
         add_filter(PAYMENT_FILTER_PAYMENT_INFO_DETAIL, function ($data, $payment) {
-            if (
-                $payment->payment_channel == 'abapay' || 
-                $payment->payment_channel == 'bakong' || 
-                $payment->payment_channel == 'card' || 
-                $payment->payment_channel == 'alipay' || 
-                $payment->payment_channel == 'wechat'
-            ) {
-                $paymentService = (new PaywayPaymentService());
-                $paymentDetail = $paymentService->getPaymentDetails($payment);
-                if ($paymentDetail) {
-                    $data = view(
-                        'plugins/payway::detail',
-                        ['payment' => $paymentDetail, 'paymentModel' => $payment]
-                    )->render();
-                }
+            if ($payment->payment_channel == PAYWAY_PAYMENT_METHOD_NAME) {
+                $payway = new Payway();
+                $detail = $payway->checkTransaction($payment->charge_id);
+
+                $data = view('plugins/payway::detail', ['payment' => $detail])->render();
             }
         
             return $data;

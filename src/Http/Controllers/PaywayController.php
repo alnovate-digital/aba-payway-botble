@@ -14,7 +14,7 @@ use Alnovate\Payway\Services\Payway;
 use Alnovate\Payway\Services\PaywayPaymentService;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
 
 class PaywayController extends BaseController
 {
@@ -134,9 +134,9 @@ class PaywayController extends BaseController
 
         do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
             'order_id' => $request->input('order_id'),
-            'amount' => $transaction['payment_amount'],
-            'charge_id' => $request->input('tran_id'),
-            'payment_channel' => $paymentOption,
+            'amount' => $data['totalAmount'],
+            'charge_id' => $tran_id,
+            'payment_channel' => $data['payment_type'],
             'status' => $status,
             'customer_id' => $request->input('customer_id'),
             'customer_type' => $request->input('customer_type'),
@@ -148,5 +148,35 @@ class PaywayController extends BaseController
         return $response
         ->setNextUrl(PaymentHelper::getRedirectURL())
         ->setMessage(__('Checkout successfully!'));
+    }
+
+    public function generateHash(Request $request)
+    {
+        $dataForHash = [
+            'req_time' => $request->input('req_time'),
+            'merchant_id' => $request->input('merchant_id'),
+            'tran_id' => $request->input('tran_id'),
+            'amount' => $request->input('amount'),
+            'items' => $request->input('items'),
+            'firstname' => $request->input('firstname'),
+            'lastname' => $request->input('lastname'),
+            'email' => $request->input('email'),
+            'phone' => $request->input('phone'),
+            'payment_option' => $request->input('payment_option'),
+            'return_url' => $request->input('return_url'),
+            'cancel_url' => $request->input('cancel_url'),
+            'continue_success_url' => $request->input('continue_success_url'),
+        ];
+
+        // Concatenate the required fields into a single string
+        $hashStr = implode('', $dataForHash);
+
+        // Generate the hash using the concatenated string
+        $payway = new Payway();
+        $hash = base64_encode(hash_hmac('sha512', $hashStr, $payway->getApiKey(), true));
+
+        return response()->json([
+            'hash' => $hash,
+        ]);
     }
 }
