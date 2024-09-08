@@ -1,15 +1,16 @@
 <?php
 
-namespace Botble\Payway\Providers;
+namespace Alnovate\Payway\Providers;
 
 use Botble\Base\Facades\Html;
+use Botble\Ecommerce\Models\ShippingRule;
 use Botble\Ecommerce\Models\Currency;
 use Botble\Payment\Enums\PaymentMethodEnum;
 use Botble\Payment\Facades\PaymentMethods;
 use Botble\Payment\Supports\PaymentHelper;
-use Botble\Payway\Forms\PaywayPaymentMethodForm;
-use Botble\Payway\Services\Payway;
-use Botble\Payway\Services\PaywayPaymentService;
+use Alnovate\Payway\Forms\PaywayPaymentMethodForm;
+use Alnovate\Payway\Services\Payway;
+use Alnovate\Payway\Services\PaywayPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
@@ -26,17 +27,44 @@ class HookServiceProvider extends ServiceProvider
 
         add_filter(PAYMENT_METHODS_SETTINGS_PAGE, [$this, 'addPaymentSettings'], 99, 1);
 
-        add_filter(BASE_FILTER_ENUM_ARRAY, function ($values, $class) {
+        add_filter(BASE_FILTER_ENUM_ARRAY, function ($value, $class) {
             if ($class == PaymentMethodEnum::class) {
-                $values['PAYWAY'] = PAYWAY_PAYMENT_METHOD_NAME;
+                $value['PAYWAY'] = PAYWAY_PAYMENT_METHOD_NAME;
+            }
+            if ($class == PaymentMethodEnum::class) {
+                $value['KHQR'] = 'bakong';
+                $value['ABAPAY'] = 'abapay';
+                $value['CARD'] = 'card';
+                $value['ALIPAY'] = 'alipay';
+                $value['WECHAT'] = 'wechat';
             }
 
-            return $values;
+            return $value;
         }, 24, 2);
 
         add_filter(BASE_FILTER_ENUM_LABEL, function ($value, $class) {
             if ($class == PaymentMethodEnum::class && $value == PAYWAY_PAYMENT_METHOD_NAME) {
-                $value = 'PayWay by ABA Bank';
+                $value = 'ABA PayWay';
+            }
+
+            if ($class == PaymentMethodEnum::class && in_array($value, ['abapay', 'bakong', 'card', 'alipay', 'wechat'])) {
+                switch ($value) {
+                    case 'abapay':
+                        $value = 'ABA PAY';
+                        break;
+                    case 'bakong':
+                        $value = 'KHQR';
+                        break;
+                    case 'card':
+                        $value = 'Credit/Debit Card';
+                        break;
+                    case 'alipay':
+                        $value = 'AliPay';
+                        break;
+                    case 'wechat':
+                        $value = 'WeChat';
+                        break;
+                }
             }
 
             return $value;
@@ -64,15 +92,25 @@ class HookServiceProvider extends ServiceProvider
         }, 20, 2);
 
         add_filter(PAYMENT_FILTER_PAYMENT_INFO_DETAIL, function ($data, $payment) {
-            if ($payment->payment_channel == PAYWAY_PAYMENT_METHOD_NAME) {
-                $payway = new Payway();
-                $detail = $payway->checkTransaction($payment->charge_id);
-
-                $data = view('plugins/payway::detail', ['payment' => $detail])->render();
+            if (
+                $payment->payment_channel == 'abapay' || 
+                $payment->payment_channel == 'bakong' || 
+                $payment->payment_channel == 'card' || 
+                $payment->payment_channel == 'alipay' || 
+                $payment->payment_channel == 'wechat'
+            ) {
+                $paymentService = (new PaywayPaymentService());
+                $paymentDetail = $paymentService->getPaymentDetails($payment);
+                if ($paymentDetail) {
+                    $data = view(
+                        'plugins/payway::detail',
+                        ['payment' => $paymentDetail, 'paymentModel' => $payment]
+                    )->render();
+                }
             }
-
+        
             return $data;
-        }, 20, 2);
+        }, 20, 2);        
     }
 
     public function addPaymentSettings(?string $settings): string
@@ -82,6 +120,17 @@ class HookServiceProvider extends ServiceProvider
 
     public function registerPaywayMethod(?string $html, array $data): ?string
     {
+        if (! get_payment_setting('status', PAYWAY_PAYMENT_METHOD_NAME)) {
+            return $html;
+        }
+
+        $data = [
+            ...$data,
+            'paymentId' => PAYWAY_PAYMENT_METHOD_NAME,
+            'paymentDisplayName' => 'ABA PayWay',
+            'supportedCurrencies' => (new PaywayPaymentService())->supportedCurrencyCodes(),
+        ];
+
         PaymentMethods::method(PAYWAY_PAYMENT_METHOD_NAME, [
             'html' => view('plugins/payway::methods', $data)->render(),
         ]);
@@ -92,22 +141,6 @@ class HookServiceProvider extends ServiceProvider
     public function checkoutWithPayway(array $data, Request $request): array
     {
         if ($data['type'] !== PAYWAY_PAYMENT_METHOD_NAME) {
-            return $data;
-        }
-
-        $supportedCurrencies = (new PaywayPaymentService())->supportedCurrencyCodes();
-
-        if (! in_array($data['currency'], $supportedCurrencies)) {
-            $data['error'] = true;
-            $data['message'] = __(
-                ":name doesn't support :currency. List of currencies supported by :name: :currencies.",
-                [
-                    'name' => 'PayWay by ABA Bank',
-                    'currency' => $data['currency'],
-                    'currencies' => implode(', ', $supportedCurrencies),
-                ]
-            );
-
             return $data;
         }
 
@@ -146,21 +179,30 @@ class HookServiceProvider extends ServiceProvider
             $lastName = $name[1];
             $email = $orderAddress['email'];
             $phone = $orderAddress['phone'];
-            $amount = $paymentData['amount'];
-            $items = [
-                'items' => [
-                    [
-                        'name' => (string) $paymentData['products'][0]['name'],
-                        'quantity' => (int) $paymentData['products'][0]['qty'],
-                        'price' => number_format((float) $paymentData['products'][0]['price'], 2),
-                    ],
-                ],
-            ];
+            $amount = number_format((float) $paymentData['orders'][0]['sub_total'], 2);
+
+            $items = [];
+            foreach ($paymentData['products'] as $product) {
+                $items[] = [
+                    'name' => (string) $product['name'],
+                    'quantity' => (int) $product['qty'],
+                    'price' => number_format((float) $product['price'], 2),
+                ];
+            }
+            
+            $shipping_fee = $paymentData['shipping_amount'];
             $hashedItems = base64_encode(json_encode($items));
-            $callback_url = route('payway.payment.callback', ['tran_id' => $transactionId]);
+            $callback_url = route('payway.payment.callback');
             $return_url = base64_encode($callback_url);
             $cancel_url = $paymentHelper->getCancelURL();
-            $continue_success_url = route('payway.payment.success', ['tran_id' => $transactionId]);
+            $continue_success_url = route('payway.payment.success', [
+                'tran_id' => $transactionId,
+                'order_id' => $paymentData['order_id'],
+                'customer_id' => $paymentData['customer_id'],
+                'customer_type' => $paymentData['customer_type'],
+                'token' => $paymentData['checkout_token'],
+            ]);
+            $return_params = json_encode($paymentData['description']);
 
             $dataForPayment = [
                 'merchant_id' => $merchant_id,
@@ -173,15 +215,11 @@ class HookServiceProvider extends ServiceProvider
                 'email' => $email,
                 'phone' => $phone,
                 'items' => $hashedItems,
+                'shipping_fee' => $shipping_fee,
                 'return_url' => $return_url,
                 'cancel_url' => $cancel_url,
                 'continue_success_url' => $continue_success_url,
-                'metadata' => json_encode([
-                    'order_id' => $paymentData['order_id'],
-                    'customer_id' => $paymentData['customer_id'],
-                    'customer_type' => addslashes($paymentData['customer_type']),
-                    'token' => $paymentData['checkout_token'],
-                ]),
+                'return_params' => $return_params,
             ];
 
             $payway->withPaymentData($dataForPayment);
