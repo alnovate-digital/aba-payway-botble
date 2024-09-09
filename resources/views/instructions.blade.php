@@ -1,3 +1,13 @@
+<style>
+    select option[value="abapay"], 
+    option[value="bakong"], 
+    option[value="card"], 
+    option[value="alipay"], 
+    option[value="wechat"] {
+        display: none;
+    }
+</style>
+
 <ol>
     <li>
         <p>For ABA PayWay Sandbox registration and documentation, go to
@@ -16,6 +26,9 @@
         <p>{{ __('After registration at :name, you will have Merchant ID and API Key', ['name' => 'ABA PayWay']) }}</p>
     </li>
     <li>
-        <p>{{ __('Enter Merchant ID and API Key') }}</p>
+        <p>{{ __('Enter Merchant ID and API Key (Sandbox or Production)') }}</p>
+    </li>
+    <li>
+        <p>{{ __('Enter all required API URLs (Sandbox or Production)') }}</p>
     </li>
 </ol>

@@ -1,6 +1,6 @@
 <?php
 
-namespace Botble\Payway\Forms;
+namespace Alnovate\Payway\Forms;
 
 use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Forms\FieldOptions\TextFieldOption;

@@ -1,11 +1,11 @@
 <?php
 
-namespace Botble\Payway\Services;
+namespace Alnovate\Payway\Services;
 
 use Botble\Payment\Services\Traits\PaymentErrorTrait;
 use Botble\Support\Services\ProduceServiceInterface;
+use Alnovate\Payway\Services\Payway;
 use Exception;
-use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 
 abstract class PaywayPaymentAbstract implements ProduceServiceInterface
@@ -13,8 +13,6 @@ abstract class PaywayPaymentAbstract implements ProduceServiceInterface
     use PaymentErrorTrait;
 
     protected string $paymentCurrency;
-
-    protected Client $client;
 
     public function __construct()
     {
@@ -31,6 +29,25 @@ abstract class PaywayPaymentAbstract implements ProduceServiceInterface
     public function getCurrency()
     {
         return $this->paymentCurrency;
+    }
+
+    public function getPaymentDetails($payment)
+    {
+        try {
+            $param = (new Payway())->getMerchantId();
+
+            $transactionList = (new Payway())->getTransactionList($param);
+            $response = json_decode($transactionList->getContent(), true);
+            if ($response['status']) {
+                return collect($response['data'])->firstWhere('transaction_id', $payment->charge_id);
+            }
+        } catch (Exception $exception) {
+            $this->setErrorMessageAndLogging($exception, 1);
+
+            return false;
+        }
+
+        return false;
     }
 
     public function execute(Request $request)
