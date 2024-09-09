@@ -179,18 +179,16 @@ class HookServiceProvider extends ServiceProvider
             $lastName = $name[1];
             $email = $orderAddress['email'];
             $phone = $orderAddress['phone'];
-            $amount = number_format((float) $paymentData['orders'][0]['sub_total'], 2, '.', '');
-
-            $items = [];
-            foreach ($paymentData['products'] as $product) {
-                $items[] = [
-                    'name' => (string) $product['name'],
-                    'quantity' => (int) $product['qty'],
-                    'price' => number_format((float) $product['price'], 2),
-                ];
-            }
-            
-            $shipping_fee = $paymentData['shipping_amount'];
+            $amount = $paymentData['amount'];
+            $items = [
+                'items' => [
+                    [
+                        'name' => (string) $paymentData['products'][0]['name'],
+                        'quantity' => (int) $paymentData['products'][0]['qty'],
+                        'price' => number_format((float) $paymentData['products'][0]['price'], 2),
+                    ],
+                ],
+            ];
             $hashedItems = base64_encode(json_encode($items));
             $callback_url = route('payway.payment.callback');
             $return_url = base64_encode($callback_url);

@@ -19,44 +19,6 @@ use Illuminate\Support\Facades\Log;
 
 class PaywayController extends BaseController
 {
-    public function generateHash(Request $request)
-    {
-        $paymentOption = $request->input('payment_option');
-        Session::put('payment_option', $paymentOption);
-
-        $amount = $request->input('amount');
-        $paymentAmount = number_format((float)$amount, 2, '.', '');
-
-        $dataForHash = [
-            'req_time' => $request->input('req_time'),
-            'merchant_id' => $request->input('merchant_id'),
-            'tran_id' => $request->input('tran_id'),
-            'amount' => $paymentAmount,
-            'items' => $request->input('items'),
-            'shipping_fee' => $request->input('shipping_fee'),
-            'firstname' => $request->input('firstname'),
-            'lastname' => $request->input('lastname'),
-            'email' => $request->input('email'),
-            'phone' => $request->input('phone'),
-            'payment_option' => $paymentOption,
-            'return_url' => $request->input('return_url'),
-            'cancel_url' => $request->input('cancel_url'),
-            'continue_success_url' => $request->input('continue_success_url'),
-            'return_params' => $request->input('return_params'),
-        ];
-
-        // Concatenate the required fields into a single string
-        $hashStr = implode('', $dataForHash);
-
-        // Generate the hash using the concatenated string
-        $payway = new Payway();
-        $hash = base64_encode(hash_hmac('sha512', $hashStr, $payway->getApiKey(), true));
-
-        return response()->json([
-            'hash' => $hash,
-        ]);
-    }
-
     public function getCallback(CallbackRequest $request, PaymentInterface $paymentRepository, Payway $payway): void
     {
         // Get the pushback from the request
