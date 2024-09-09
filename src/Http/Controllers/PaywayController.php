@@ -14,7 +14,7 @@ use Alnovate\Payway\Services\Payway;
 use Alnovate\Payway\Services\PaywayPaymentService;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
 
 class PaywayController extends BaseController
 {
