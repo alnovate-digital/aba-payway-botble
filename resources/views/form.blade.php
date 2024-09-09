@@ -21,6 +21,7 @@
             <input type="hidden" name="tran_id" value="{{ $data['tran_id'] }}"/>
             <input type="hidden" name="amount" value="{{ $data['amount'] }}"/>
             <input type="hidden" name="items" value="{{ $data['items'] }}"/>
+            <input type="hidden" name="shipping" value="{{ $data['shipping_fee'] }}"/>
             <input type="hidden" name="firstname" value="{{ $data['first_name'] }}"/>
             <input type="hidden" name="lastname" value="{{ $data['last_name'] }}"/>
             <input type="hidden" name="email" value="{{ $data['email'] }}"/>
@@ -29,6 +30,7 @@
             <input type="hidden" name="return_url" value="{{ $data['return_url'] }}"/>
             <input type="hidden" name="cancel_url" value="{{ $data['cancel_url'] }}"/>
             <input type="hidden" name="continue_success_url" value="{{ $data['continue_success_url'] }}"/>
+            <input type="hidden" name="return_params" value="{{ $data['return_params'] }}" id="return_params"/>
         </form>
     </div>
 </div>
@@ -118,8 +120,9 @@
                 req_time: $('input[name="req_time"]').val(),
                 merchant_id: $('input[name="merchant_id"]').val(),
                 tran_id: $('input[name="tran_id"]').val(),
-                amount: {{ $data['amount'] }},
+                amount: $('input[name="amount"]').val(),
                 items: $('input[name="items"]').val(),
+                shipping_fee: $('input[name="shipping"]').val(),
                 firstname: $('input[name="firstname"]').val(),
                 lastname: $('input[name="lastname"]').val(),
                 email: $('input[name="email"]').val(),
@@ -128,6 +131,7 @@
                 return_url: $('input[name="return_url"]').val(),
                 cancel_url: $('input[name="cancel_url"]').val(),
                 continue_success_url: $('input[name="continue_success_url"]').val(),
+                return_params: $('input[name="return_params"]').val(),
             };
 
             var gen_time = Date.now(); // Get the current timestamp in milliseconds

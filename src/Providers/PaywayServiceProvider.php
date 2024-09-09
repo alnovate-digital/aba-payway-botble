@@ -1,6 +1,6 @@
 <?php
 
-namespace Botble\Payway\Providers;
+namespace Alnovate\Payway\Providers;
 
 use Botble\Base\Traits\LoadAndPublishDataTrait;
 use Botble\Theme\Facades\Theme;
