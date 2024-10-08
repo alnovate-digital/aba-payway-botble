@@ -13,6 +13,7 @@ use Alnovate\Payway\Services\Payway;
 use Alnovate\Payway\Services\PaywayPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Throwable;
 
 class HookServiceProvider extends ServiceProvider
@@ -32,9 +33,9 @@ class HookServiceProvider extends ServiceProvider
                 $value['PAYWAY'] = PAYWAY_PAYMENT_METHOD_NAME;
             }
             if ($class == PaymentMethodEnum::class) {
-                $value['KHQR'] = 'bakong';
                 $value['ABAPAY'] = 'abapay';
-                $value['CARD'] = 'card';
+                $value['KHQR'] = 'bakong';
+                $value['CARDS'] = 'cards';
                 $value['ALIPAY'] = 'alipay';
                 $value['WECHAT'] = 'wechat';
             }
@@ -47,7 +48,7 @@ class HookServiceProvider extends ServiceProvider
                 $value = 'ABA PayWay';
             }
 
-            if ($class == PaymentMethodEnum::class && in_array($value, ['abapay', 'bakong', 'card', 'alipay', 'wechat'])) {
+            if ($class == PaymentMethodEnum::class && in_array($value, ['abapay', 'bakong', 'cards', 'alipay', 'wechat'])) {
                 switch ($value) {
                     case 'abapay':
                         $value = 'ABA PAY';
@@ -55,7 +56,7 @@ class HookServiceProvider extends ServiceProvider
                     case 'bakong':
                         $value = 'KHQR';
                         break;
-                    case 'card':
+                    case 'cards':
                         $value = 'Credit/Debit Card';
                         break;
                     case 'alipay':
@@ -95,7 +96,7 @@ class HookServiceProvider extends ServiceProvider
             if (
                 $payment->payment_channel == 'abapay' || 
                 $payment->payment_channel == 'bakong' || 
-                $payment->payment_channel == 'card' || 
+                $payment->payment_channel == 'cards' || 
                 $payment->payment_channel == 'alipay' || 
                 $payment->payment_channel == 'wechat'
             ) {
@@ -173,14 +174,11 @@ class HookServiceProvider extends ServiceProvider
             $api_key = $payway->getApiKey();
             $req_time = date('YmdHis');
             $transactionId = $payway->getTransactionId();
-            $orderAddress = $paymentData['address'];
-            $name = explode(' ', $orderAddress['name']);
-            $firstName = $name[0];
-            $lastName = $name[1];
-            $email = $orderAddress['email'];
-            $phone = $orderAddress['phone'];
-            $amount = number_format((float) $paymentData['orders'][0]['sub_total'], 2, '.', '');
 
+            $firstName = Str::of($paymentData['address']['name'])->before(' ')->toString();
+            $lastName = Str::of($paymentData['address']['name'])->after(' ')->toString();
+            $email = $paymentData['address']['email'];
+            $phone = $paymentData['address']['phone'];
             $items = [];
             foreach ($paymentData['products'] as $product) {
                 $items[] = [
@@ -189,9 +187,10 @@ class HookServiceProvider extends ServiceProvider
                     'price' => number_format((float) $product['price'], 2),
                 ];
             }
-            
-            $shipping_fee = $paymentData['shipping_amount'];
             $hashedItems = base64_encode(json_encode($items));
+            $shipping_fee = $paymentData['shipping_amount'];
+            $payment_amount = $paymentData['amount'] - $shipping_fee;  
+            $amount = number_format((float) $payment_amount, 2, '.', '');
             $callback_url = route('payway.payment.callback');
             $return_url = base64_encode($callback_url);
             $cancel_url = $paymentHelper->getCancelURL();

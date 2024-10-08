@@ -61,8 +61,8 @@
                 </label>
             </div>
             <div class="payment_option" data-bs-dismiss="modal">
-                <input type="radio" name="payment_option_radio" class="form-check-input" value="card" id="card">
-                <label class="paymentOption" for="card">
+                <input type="radio" name="payment_option_radio" class="form-check-input" value="cards" id="cards">
+                <label class="paymentOption" for="cards">
                     <img class="cardType" src="{{ asset('vendor/core/plugins/payway/images/ic_generic_1x.png') }}">
                     <span class="cardName">
                         <strong><span class="titleCard">Credit/Debit Card</span><br/></strong>
@@ -120,7 +120,7 @@
                 req_time: $('input[name="req_time"]').val(),
                 merchant_id: $('input[name="merchant_id"]').val(),
                 tran_id: $('input[name="tran_id"]').val(),
-                amount: $('input[name="amount"]').val(),
+                amount: {{ $data['amount'] }},
                 items: $('input[name="items"]').val(),
                 shipping_fee: $('input[name="shipping"]').val(),
                 firstname: $('input[name="firstname"]').val(),
@@ -133,6 +133,8 @@
                 continue_success_url: $('input[name="continue_success_url"]').val(),
                 return_params: $('input[name="return_params"]').val(),
             };
+
+            console.log(formData.amount); // Check the value here
 
             var gen_time = Date.now(); // Get the current timestamp in milliseconds
             

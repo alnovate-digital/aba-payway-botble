@@ -1,7 +1,7 @@
 <style>
     select option[value="abapay"], 
     option[value="bakong"], 
-    option[value="card"], 
+    option[value="cards"], 
     option[value="alipay"], 
     option[value="wechat"] {
         display: none;
