@@ -65,8 +65,8 @@
                 <label class="paymentOption" for="alipay">
                     <img class="cardType" src="{{ asset('vendor/core/plugins/payway/images/ic_AliPay.png') }}">
                     <span class="cardName">
-                        <strong><span class="titleCard">AliPay</span><br/></strong>
-                        <span class="detailCard small text-secondary">Scan to pay with AliPay</span>
+                        <strong><span class="titleCard">Alipay</span><br/></strong>
+                        <span class="detailCard small text-secondary">Scan to pay with Alipay</span>
                     </span>
                 </label>
             </div>
