@@ -56,19 +56,19 @@ class PaywayController extends BaseController
         ]);
     }
 
-    public function getCallback(CallbackRequest $request, PaymentInterface $paymentRepository, Payway $payway): void
+    public function getCallback(CallbackRequest $request, PaymentInterface $paymentRepository, Payway $payway)
     {
         // Get the pushback from the request
         $tran_id = $request->input('tran_id');
         $auth_code = $request->input('apv');
         $payment_status = $request->input('status');
-
-        if (! $tran_id && $auth_code && $payment_status == 0) {
+        
+        if (!$tran_id || !$auth_code || $payment_status != 0) {
             return $response
-            ->setError()
-            ->setMessage(__('Invalid Data!'));
+                ->setError()
+                ->setMessage(__('Invalid Data!'));
         }
-
+        
         // Check order status in order table against the transaction id or order id.
         $transaction = Payment::query()->where('charge_id', $tran_id)
             ->select(['charge_id', 'status'])->first();
@@ -83,7 +83,7 @@ class PaywayController extends BaseController
             $verifyData = $payway->checkTransaction($tran_id);
             $validation = json_decode($verifyData->getContent(), true);
 
-            if ($validation) {
+            if ($validation && $validation['status']['code'] === '00') {
                 // Validate and update order status in order table as Completed
                 Payment::query()
                     ->where('charge_id', $tran_id)
