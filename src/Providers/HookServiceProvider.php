@@ -51,7 +51,7 @@ class HookServiceProvider extends ServiceProvider
             if ($class == PaymentMethodEnum::class && in_array($value, ['abapay', 'bakong', 'cards', 'alipay', 'wechat'])) {
                 switch ($value) {
                     case 'abapay':
-                        $value = 'ABA PAY';
+                        $value = 'ABA KHQR';
                         break;
                     case 'bakong':
                         $value = 'KHQR';

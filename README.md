@@ -12,9 +12,8 @@ This plugin allows you to integrate ABA PayWay Payment Gateway into Botble CMS.
 
 ## Payment Options
 
-- [x] ABA Pay
-- [x] KHQR
-- [x] Credit/Debit Cards
+- [x] ABA KHQR (Combined ABA Pay and KHQR)
+- [x] Credit/Debit Cards (Visa, Mastercard, UnionPay, JCB)
 - [ ] AliPay (Disabled by default)
 - [ ] WeChat (Disabled by default)
 
@@ -34,6 +33,7 @@ This plugin allows you to integrate ABA PayWay Payment Gateway into Botble CMS.
 - [ ] Card-On-File (COF)
 - [ ] Exchange Rate
 - [ ] Payment Link
+- [ ] Google Pay™
 
 ## Sandbox API Endpoints
 

@@ -64,34 +64,49 @@ class PaywayController extends BaseController
         $payment_status = $request->input('status');
 
         if (! $tran_id && $auth_code && $payment_status == 0) {
-            abort(404);
+            return $response
+            ->setError()
+            ->setMessage(__('Invalid Data!'));
         }
 
-        $verifyData = $payway->checkTransaction($tran_id);
-        $data = json_decode($verifyData->getContent(), true);
+        // Check order status in order table against the transaction id or order id.
+        $transaction = Payment::query()->where('charge_id', $tran_id)
+            ->select(['charge_id', 'status'])->first();
 
-        if (! $data) {
-            return;
+        if (! $transaction) {
+            return $response
+                ->setError()
+                ->setMessage(__('Invalid Transaction!'));
         }
 
-        $payment = $paymentRepository->getFirstBy([
-            'charge_id' => $tran_id,
-        ]);
+        if ($transaction->status == PaymentStatusEnum::PENDING) {
+            $verifyData = $payway->checkTransaction($tran_id);
+            $validation = json_decode($verifyData->getContent(), true);
 
-        if (! $payment) {
-            return;
+            if ($validation) {
+                // Validate and update order status in order table as Completed
+                Payment::query()
+                    ->where('charge_id', $tran_id)
+                    ->update(['status' => PaymentStatusEnum::COMPLETED]);
+
+                return $response
+                    ->setError()
+                    ->setMessage(__('Transaction is successfully completed!'));
+            }
+            // If transaction validation failed, update order status as Failed
+            Payment::query()
+                ->where('charge_id', $tran_id)
+                ->update(['status' => PaymentStatusEnum::FAILED]);
+
+            return $response
+                ->setError()
+                ->setMessage(__('Validation Failed!'));
         }
 
-        $status = match ($data['data']['payment_status']) {
-            'APPROVED' => PaymentStatusEnum::COMPLETED,
-            'DECLINED' => PaymentStatusEnum::FAILED,
-            default => PaymentStatusEnum::PENDING,
-        };
-
-        if (! in_array($payment->status, [PaymentStatusEnum::COMPLETED, PaymentStatusEnum::FAILED, $status])) {
-            $payment->status = $status;
-            $payment->save();
-        }
+        // That means Order status already updated. No need to update database.
+        return $response
+            ->setError()
+            ->setMessage(__('Transaction is already successfully completed!'));
     }
 
     public function getSuccess(PaymentRequest $request, Payway $payway, BaseHttpResponse $response)

@@ -16,7 +16,7 @@ class PaywayPaymentMethodForm extends PaymentMethodForm
         $this
             ->paymentId(PAYWAY_PAYMENT_METHOD_NAME)
             ->paymentName('ABA PayWay')
-            ->paymentDescription(__('Customer can buy product and pay directly using ABA Pay, KHQR and Cards via :name', ['name' => 'ABA PayWay']))
+            ->paymentDescription(__('Customer can buy product and pay directly using ABA KHQR, Cards, Alipay or WeChat via :name', ['name' => 'ABA PayWay']))
             ->paymentLogo(url('vendor/core/plugins/payway/images/payway.png'))
             ->paymentUrl('https://www.payway.com.kh/')
             ->paymentInstructions(view('plugins/payway::instructions')->render())

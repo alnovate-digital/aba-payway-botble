@@ -43,20 +43,10 @@
             <div class="payment_option" data-bs-dismiss="modal">
                 <input type="radio" name="payment_option_radio" class="form-check-input" value="abapay" id="abapay">
                 <label class="paymentOption" for="abapay">
-                    <img class="cardType" src="{{ asset('vendor/core/plugins/payway/images/ic_ABA PAY_1x.png') }}">
-                    <span class="cardName">
-                        <strong><span class="titleCard">ABA PAY</span><br/></strong>
-                        <span class="detailCard small text-secondary">Scan to pay with ABA Mobile</span>
-                    </span>
-                </label>
-            </div>
-            <div class="payment_option" data-bs-dismiss="modal">
-                <input type="radio" name="payment_option_radio" class="form-check-input" value="bakong" id="bakong">
-                <label class="paymentOption" for="bakong">
                     <img class="cardType" src="{{ asset('vendor/core/plugins/payway/images/ic_KHQR_1x.png') }}">
                     <span class="cardName">
-                        <strong><span class="titleCard">KHQR</span><br/></strong>
-                        <span class="detailCard small text-secondary">Scan to pay with memeber bank app</span>
+                        <strong><span class="titleCard">ABA KHQR</span><br/></strong>
+                        <span class="detailCard small text-secondary">Scan to pay with any banking app</span>
                     </span>
                 </label>
             </div>
