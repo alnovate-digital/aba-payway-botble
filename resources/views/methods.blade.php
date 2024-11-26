@@ -21,7 +21,7 @@
         }
 
         .modal#paymentModal {
-            display: block; /* Hidden by default */
+            display: none; /* Hidden by default */
             position: fixed; /* Stay in place */
             left: 50%;
             top: 50%;
@@ -154,8 +154,8 @@
         .loadingOverlay{
             display: none; 
             position: absolute; 
-            width: 100%; 
-            height: 100%; 
+            width: 92% !important; 
+            height: 100% !important; 
             background: rgba(255, 255, 255, 0.7); 
             z-index: 1200; 
             justify-content: center; 
@@ -192,53 +192,55 @@
         </div>
     </div>
 
-    @if (EcommerceHelper::isValidToProcessCheckout())
-        <script>
-            $(document).ready(function(){
-                // Check if PayWay is selected
-                if ($('input[name="payment_method"]:checked').val() === 'payway') {
-                    $('#checkout-form').off('submit').on('submit', function(event) {
-                        event.preventDefault(); // Prevent the default form submission
+	@if (EcommerceHelper::isValidToProcessCheckout())
+		<script>
+			$(document).ready(function(){
+				// Check if PayWay is selected
+				if ($('input[name="payment_method"]:checked').val() === 'payway') {
+					$('#checkout-form').off('submit').on('submit', function(event) {
+						event.preventDefault(); // Prevent the default form submission
 
-                        var form = $(this);
-                        var actionUrl = form.attr('action'); // Get the form action URL
+						var form = $(this);
+						var actionUrl = form.attr('action'); // Get the form action URL
 
-                        // Disable the submit button to prevent multiple submissions
-                        $('.payment-checkout-btn').prop('disabled', true);
+						// Disable the submit button to prevent multiple submissions
+						$('.payment-checkout-btn').prop('disabled', true);
 
-                        // Perform an AJAX request to the server
-                        $.ajax({
-                            type: form.attr('method'), // GET or POST
-                            url: actionUrl,
-                            data: form.serialize(), // Send form data
-                            success: function(response) {
-                                $('#paymentModal .modal-body').html(response);
-                                $('#paymentModal').modal('show');
-                            },
-                            error: function(xhr, status, error) {
-                                // Handle any errors here
-                                console.error('Error occurred: ' + error);
-                                // Re-enable the submit button in case of error
-                                $('.payment-checkout-btn').prop('disabled', false);
-                                window.location.reload(true);
-                            }
-                        });
-                    });
+						// Perform an AJAX request to the server
+						$.ajax({
+							type: form.attr('method'), // GET or POST
+							url: actionUrl,
+							data: form.serialize(), // Send form data
+							success: function(response) {
+								$('#paymentModal .modal-body').html(response);
+								$('#paymentModal').modal('show');
+							},
+							error: function(xhr, status, error) {
+								// Handle any errors here
+								console.error('Error occurred: ' + error);
+								// Re-enable the submit button
+								$('.payment-checkout-btn').prop('disabled', false);
+								// Submit the form normally to let Botble handle the error
+								form.unbind('submit').submit();
+							}
+						});
+					});
 
-                    // Directly bind reload to the close button of Modal
-                    $('.close').on('click', function() {
-                        window.location.reload(true);
-                    });
+					// Directly bind reload to the close button of Modal
+					$('.close').on('click', function() {
+						window.location.reload(true);
+					});
 
-                    // Reload the ABA PayWay iFrame Modal loading on mobile
-                    document.body.addEventListener('click', function(event) {
-                        if (event.target.classList.contains('aba_checkout_overlay')) {
-                            location.reload();
-                        }
-                    });
-                }
-            });
-        </script>
-    @endif
+					// Reload the ABA PayWay iFrame Modal loading on mobile
+					document.body.addEventListener('click', function(event) {
+						if (event.target.classList.contains('aba_checkout_overlay')) {
+							location.reload();
+						}
+					});
+				}
+			});
+		</script>
+	@endif
+
     </x-plugins-payment::payment-method>
 @endif
