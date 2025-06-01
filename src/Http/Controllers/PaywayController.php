@@ -4,6 +4,7 @@ namespace Alnovate\Payway\Http\Controllers;
 
 use Botble\Base\Http\Controllers\BaseController;
 use Botble\Base\Http\Responses\BaseHttpResponse;
+use Botble\Ecommerce\Models\Order; //newly added
 use Botble\Payment\Enums\PaymentStatusEnum;
 use Botble\Payment\Enums\PaymentMethodEnum;
 use Botble\Payment\Repositories\Interfaces\PaymentInterface;
@@ -15,6 +16,7 @@ use Alnovate\Payway\Services\PaywayPaymentService;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
 
 class PaywayController extends BaseController
 {
@@ -56,7 +58,7 @@ class PaywayController extends BaseController
         ]);
     }
 
-    public function getCallback(CallbackRequest $request, PaymentInterface $paymentRepository, Payway $payway): void
+    public function getCallback(CallbackRequest $request, PaymentInterface $paymentRepository, Payway $payway)
     {
         // Get the pushback from the request
         $tran_id = $request->input('tran_id');
@@ -71,7 +73,7 @@ class PaywayController extends BaseController
         $data = json_decode($verifyData->getContent(), true);
     
         if (! $data) {
-            return;
+            return response()->json(['error' => 'Invalid data'], 400);
         }
     
         $payment = $paymentRepository->getFirstBy([
@@ -79,7 +81,7 @@ class PaywayController extends BaseController
         ]);
     
         if (! $payment) {
-            return;
+            return response()->json(['error' => 'Payment not found'], 404);
         }
     
         $status = match ($data['data']['payment_status']) {
@@ -87,12 +89,57 @@ class PaywayController extends BaseController
             'DECLINED' => PaymentStatusEnum::FAILED,
             default => PaymentStatusEnum::PENDING,
         };
-    
+
         if (! in_array($payment->status, [PaymentStatusEnum::COMPLETED, PaymentStatusEnum::FAILED])) {
             $payment->status = $status;
             $payment->save();
+
+            if ($status == PaymentStatusEnum::COMPLETED) {
+                $order = Order::where('payment_id', $payment->id)->first();
+
+                if ($order && $order->status != 'completed') {
+                    $order->status = 'completed';
+                    $order->save();
+                }
+
+                $paymentOption = Session::get('payment_option');
+
+                do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
+                    'order_id' => $request->input('order_id'),
+                    'amount' => $transaction['payment_amount'],
+                    'charge_id' => $request->input('tran_id'),
+                    'payment_channel' => $paymentOption,
+                    'status' => $status,
+                    'customer_id' => $request->input('customer_id'),
+                    'customer_type' => $request->input('customer_type'),
+                    'payment_type' => 'direct',
+                ], $request);
+
+                Session::forget('payment_option');
+
+            }
         }
-    }    
+
+        return response()->json(['status' => 'success'], 200);
+    }
+
+    public function checkPaymentStatus(CallbackRequest $request, PaymentInterface $paymentRepository)
+    {
+        $tran_id = $request->input('tran_id');
+
+        if (! $tran_id) {
+            return response()->json(['error' => 'Missing transaction ID'], 400);
+        }
+
+        $payment = $paymentRepository->getFirstBy(['charge_id' => $tran_id]);
+        if (! $payment) {
+            return response()->json(['error' => 'Payment not found'], 404);
+        }
+
+        return response()->json([
+            'status' => $payment->status->getValue(),
+        ]);
+    }
 
     public function getSuccess(PaymentRequest $request, Payway $payway, BaseHttpResponse $response)
     {
@@ -110,6 +157,7 @@ class PaywayController extends BaseController
         
         // Get the first transaction
         $transaction = $transactions['data'][0];
+        Log::info('Get the first transaction from PayWay to check the successful payment', ['Transaction' => $transaction]);
 
         if (! $transaction) {
             $errorMessage = __('Checkout failed with PayWay status: ') . $transaction['payment_status_code'];

@@ -6,6 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <meta name="author" content="PayWay">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
@@ -36,7 +37,9 @@
 </div>
 <!-- Overlay div, initially hidden -->
 <div id="loadingOverlay" class="loadingOverlay">
-    <div class="loading-overlay-icon"> <img src="https://checkout.payway.com.kh/images/loading.svg"></div>
+    <div class="loading-overlay-icon">
+        <img src="https://checkout.payway.com.kh/images/loading.svg" alt="Loading">
+    </div>
 </div>
 
         <div class="payment_form">
@@ -145,7 +148,30 @@
 
             // Proceed with checkout
             AbaPayway.checkout();
-            
+
+            const checkPaymentStatus = async () => {
+                try {
+                    const statusResponse = await $.ajax({
+                        url: `/payway/payment/status/${formData.tran_id}`,
+                        type: 'GET',
+                    });
+
+                    if (statusResponse.status === 'completed') {
+                        console.log('Payment completed!');
+                        window.location.href = formData.continue_success_url;
+                    } else {
+                        console.log('Waiting for payment...');
+                    }
+
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+
+                if (++attempts < maxAttempts) {
+                    setTimeout(checkPaymentStatus, pollInterval);
+                }
+            };
+
             } catch (error) {
             console.error('Error:', error);
             }

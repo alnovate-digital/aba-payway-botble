@@ -38,18 +38,26 @@ class PaywayServiceProvider extends ServiceProvider
 
         // Check if the styles have already been pushed
         View::composer('*', function ($view) {
-            static $stylePushed = false;
+            static $scriptPushed = false;
 
-            if (!$stylePushed) {
-                $view->getFactory()->startPush('header');
-                echo '<style>
-                    select option[value="payway"],
-                    option[value="bakong"] {
-                        display: none;
-                    }
-                </style>';
+            if (!$scriptPushed) {
+                ob_start();
+                ?>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const payway = document.querySelector('option[value="payway"]');
+                        const bakong = document.querySelector('option[value="bakong"]');
+                        if (payway) payway.remove();
+                        if (bakong) bakong.remove();
+                    });
+                </script>
+                <?php
+                $content = ob_get_clean();
+                $view->getFactory()->startPush('header'); // Or use 'scripts' if preferred
+                echo $content;
                 $view->getFactory()->stopPush();
-                $stylePushed = true;
+
+                $scriptPushed = true;
             }
         });
     }

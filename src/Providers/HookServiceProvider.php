@@ -191,7 +191,13 @@ class HookServiceProvider extends ServiceProvider
             $shipping_fee = $paymentData['shipping_amount'];
             $payment_amount = $paymentData['amount'] - $shipping_fee;  
             $amount = number_format((float) $payment_amount, 2, '.', '');
-            $callback_url = route('payway.payment.callback');
+            $callback_url = route('payway.payment.callback', [
+                'tran_id' => $transactionId,
+                'order_id' => $paymentData['order_id'],
+                'customer_id' => $paymentData['customer_id'],
+                'customer_type' => $paymentData['customer_type'],
+                'token' => $paymentData['checkout_token'],
+            ]);
             $return_url = base64_encode($callback_url);
             $cancel_url = $paymentHelper->getCancelURL();
             $continue_success_url = route('payway.payment.success', [

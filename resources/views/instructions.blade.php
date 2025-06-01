@@ -1,12 +1,13 @@
-<style>
-    select option[value="abapay"], 
-    option[value="bakong"], 
-    option[value="cards"], 
-    option[value="alipay"], 
-    option[value="wechat"] {
-        display: none;
-    }
-</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const valuesToRemove = ['abapay', 'bakong', 'cards', 'alipay', 'wechat'];
+
+        valuesToRemove.forEach(value => {
+            const option = document.querySelector(`option[value="${value}"]`);
+            if (option) option.remove();
+        });
+    });
+</script>
 
 <ol>
     <li>
